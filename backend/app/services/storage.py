@@ -232,14 +232,25 @@ class DynamoDBStore(Store):
 class PostgresStore(Store):
     """PostgreSQL store. Stores pydantic models as JSONB."""
 
-    def __init__(self, dsn: str) -> None:
+    def __init__(self, database_url: str):
         import psycopg2
         from psycopg2.extras import Json
-
-        self._dsn = dsn
         self._Json = Json
-        # Ensure table exists
-        with psycopg2.connect(self._dsn) as conn:
+        self._dsn = database_url
+        try:
+            self._init_db()
+        except Exception as e:
+            print(f"DATABASE CONNECTION/INIT ERROR: {e}")
+            raise e
+
+    def _get_conn(self):
+        import psycopg2
+        conn = psycopg2.connect(self._dsn)
+        conn.autocommit = True
+        return conn
+
+    def _init_db(self) -> None:
+        with self._get_conn() as conn:
             with conn.cursor() as cur:
                 cur.execute("""
                     CREATE TABLE IF NOT EXISTS nps_storage (
@@ -251,8 +262,9 @@ class PostgresStore(Store):
                 """)
 
     def _upsert_batch(self, kind: str, items: list[dict[str, Any]]) -> None:
-        import psycopg2
-        with psycopg2.connect(self._dsn) as conn:
+        if not items:
+            return
+        with self._get_conn() as conn:
             with conn.cursor() as cur:
                 for item in items:
                     cur.execute("""
@@ -262,24 +274,22 @@ class PostgresStore(Store):
                     """, (kind, item["id"], self._Json(item)))
 
     def _query(self, kind: str) -> list[dict[str, Any]]:
-        import psycopg2
-        with psycopg2.connect(self._dsn) as conn:
+        with self._get_conn() as conn:
             with conn.cursor() as cur:
                 cur.execute("SELECT data FROM nps_storage WHERE kind = %s", (kind,))
                 return [row[0] for row in cur.fetchall()]
 
     def upsert_devices(self, devices: list[Device]) -> None:
-        self._upsert_batch(_DEVICES, [{**d.model_dump(mode="json"), "id": d.id} for d in devices])
+        self._upsert_batch(_DEVICES, [{**d.model_dump(mode="json"), "id": d.ip} for d in devices])
 
     def upsert_rulesets(self, rulesets: list[FirewallRuleSet]) -> None:
-        self._upsert_batch(_RULESETS, [{**r.model_dump(mode="json"), "id": r.id} for r in rulesets])
+        self._upsert_batch(_RULESETS, [{**r.model_dump(mode="json"), "id": r.ruleset_id} for r in rulesets])
 
     def replace_results(self, results: list[BenchmarkResult]) -> None:
-        import psycopg2
-        with psycopg2.connect(self._dsn) as conn:
+        with self._get_conn() as conn:
             with conn.cursor() as cur:
                 cur.execute("DELETE FROM nps_storage WHERE kind = %s", (_RESULTS,))
-        self._upsert_batch(_RESULTS, [{**r.model_dump(mode="json"), "id": r.id} for r in results])
+        self._upsert_batch(_RESULTS, [{**r.model_dump(mode="json"), "id": f"{r.check_id}:{r.target_id}"} for r in results])
 
     def record_scan(self, summary: ScanSummary) -> None:
         self._upsert_batch(_SCANS, [{**summary.model_dump(mode="json"), "id": summary.scan_id}])
@@ -301,8 +311,7 @@ class PostgresStore(Store):
                                        "id": schedule.schedule_id}])
 
     def delete_schedule(self, schedule_id: str) -> bool:
-        import psycopg2
-        with psycopg2.connect(self._dsn) as conn:
+        with self._get_conn() as conn:
             with conn.cursor() as cur:
                 cur.execute("DELETE FROM nps_storage WHERE kind = %s AND id = %s",
                             (_SCHEDULES, schedule_id))
