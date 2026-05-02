@@ -71,11 +71,9 @@ def create_app() -> FastAPI:
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.cors_origins,
-        allow_methods=["GET", "POST", "OPTIONS", "PATCH", "DELETE"],
-        allow_headers=["X-Api-Key", "Content-Type"],
-        # Browsers hide Content-Disposition unless we explicitly expose it,
-        # which would block the downloaded filename in the dashboard.
+        allow_origins=["*"],
+        allow_methods=["*"],
+        allow_headers=["*"],
         expose_headers=["Content-Disposition"],
         allow_credentials=False,
     )
