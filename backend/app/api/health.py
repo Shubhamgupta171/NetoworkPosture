@@ -2,16 +2,29 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
 from app import __version__
+from app.services.storage import get_store
 
 router = APIRouter(tags=["health"])
 
 
 @router.get("/health")
-async def health() -> dict[str, str]:
-    return {"status": "ok", "version": __version__}
+async def health(store=Depends(get_store)):
+    db_ok = False
+    try:
+        # Just a simple query to see if DB is alive
+        store.list_scans()
+        db_ok = True
+    except Exception:
+        db_ok = False
+
+    return {
+        "status": "ok",
+        "version": __version__,
+        "database": "ok" if db_ok else "error"
+    }
 
 
 @router.get("/scheduler-tick")
