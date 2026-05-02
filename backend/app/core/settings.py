@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     aws_region: str = "ap-south-1"
     dynamodb_table: str = "network-posture-scanner"
 
-    cors_allowed_origins: str = "http://localhost:5173,http://localhost:3000,https://netowork-posture.vercel.app"
+    cors_allowed_origins: str = "*"
     log_level: str = "INFO"
 
     # Optional override for where the bundled sample firewall fixtures live.
