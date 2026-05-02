@@ -11,19 +11,22 @@ router = APIRouter(tags=["health"])
 
 
 @router.get("/health")
-async def health(store=Depends(get_store)):
-    db_ok = False
+async def health():
+    db_status = "ok"
+    db_error = None
     try:
-        # Just a simple query to see if DB is alive
+        from app.services.storage import get_store
+        store = get_store()
         store.list_scans()
-        db_ok = True
-    except Exception:
-        db_ok = False
+    except Exception as e:
+        db_status = "error"
+        db_error = str(e)
 
     return {
         "status": "ok",
         "version": __version__,
-        "database": "ok" if db_ok else "error"
+        "database": db_status,
+        "database_error": db_error
     }
 
 
