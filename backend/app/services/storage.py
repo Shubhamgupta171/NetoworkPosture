@@ -280,10 +280,10 @@ class PostgresStore(Store):
                 return [row[0] for row in cur.fetchall()]
 
     def upsert_devices(self, devices: list[Device]) -> None:
-        self._upsert_batch(_DEVICES, [{**d.model_dump(mode="json"), "id": d.ip} for d in devices])
+        self._upsert_batch(_DEVICES, [{**d.model_dump(mode="json"), "id": str(d.ip)} for d in devices])
 
     def upsert_rulesets(self, rulesets: list[FirewallRuleSet]) -> None:
-        self._upsert_batch(_RULESETS, [{**r.model_dump(mode="json"), "id": r.ruleset_id} for r in rulesets])
+        self._upsert_batch(_RULESETS, [{**r.model_dump(mode="json"), "id": str(r.ruleset_id)} for r in rulesets])
 
     def replace_results(self, results: list[BenchmarkResult]) -> None:
         with self._get_conn() as conn:
