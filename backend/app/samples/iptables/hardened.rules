@@ -1,0 +1,15 @@
+# Output of: iptables-save
+# Reasonably hardened reference — used as a "passes most checks" fixture.
+*filter
+:INPUT DROP [0:0]
+:FORWARD DROP [0:0]
+:OUTPUT DROP [0:0]
+-A INPUT -i lo -j ACCEPT
+-A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 22 -s 10.10.0.0/24 -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 443 -s 0.0.0.0/0 -j ACCEPT
+-A OUTPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
+-A OUTPUT -p tcp -m tcp --dport 443 -d 0.0.0.0/0 -j ACCEPT
+-A OUTPUT -p udp -m udp --dport 53 -d 10.10.0.53 -j ACCEPT
+-A OUTPUT -p udp -m udp --dport 514 -d 10.10.0.50 -j ACCEPT
+COMMIT

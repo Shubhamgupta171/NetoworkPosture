@@ -1,0 +1,38 @@
+{
+  "GroupId": "sg-0fffeeeeddddccccc",
+  "GroupName": "app-tier-sg",
+  "VpcId": "vpc-0123456789abcdef0",
+  "Description": "Application tier — least-privilege reference",
+  "IpPermissions": [
+    {
+      "IpProtocol": "tcp",
+      "FromPort": 22,
+      "ToPort": 22,
+      "IpRanges": [{"CidrIp": "10.10.20.0/24", "Description": "Bastion subnet only"}]
+    },
+    {
+      "IpProtocol": "tcp",
+      "FromPort": 8443,
+      "ToPort": 8443,
+      "UserIdGroupPairs": [{"GroupId": "sg-0a1b2c3d4e5f60718", "Description": "Web tier only"}]
+    }
+  ],
+  "IpPermissionsEgress": [
+    {
+      "IpProtocol": "tcp",
+      "FromPort": 443,
+      "ToPort": 443,
+      "IpRanges": [{"CidrIp": "0.0.0.0/0", "Description": "Egress HTTPS only"}]
+    },
+    {
+      "IpProtocol": "udp",
+      "FromPort": 53,
+      "ToPort": 53,
+      "IpRanges": [{"CidrIp": "10.10.0.53/32", "Description": "Internal resolver"}]
+    }
+  ],
+  "Tags": [
+    {"Key": "Environment", "Value": "prod"},
+    {"Key": "Owner", "Value": "platform-team"}
+  ]
+}

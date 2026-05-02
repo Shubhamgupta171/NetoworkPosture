@@ -50,7 +50,7 @@ def _samples_dir() -> Path:
     explicit = getattr(settings, "samples_dir", None)
     if explicit:
         return Path(explicit)
-    return Path(__file__).resolve().parents[3] / "samples"
+    return Path(__file__).resolve().parent.parent / "samples"
 
 
 def list_available_samples() -> list[dict[str, str]]:

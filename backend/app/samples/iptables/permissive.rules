@@ -1,0 +1,17 @@
+# Output of: iptables-save
+# Intentionally permissive — used to exercise CIS checks.
+*filter
+:INPUT ACCEPT [0:0]
+:FORWARD DROP [0:0]
+:OUTPUT ACCEPT [0:0]
+-A INPUT -i lo -j ACCEPT
+-A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 22 -s 0.0.0.0/0 -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 23 -s 0.0.0.0/0 -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 80 -s 0.0.0.0/0 -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 443 -s 0.0.0.0/0 -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 3306 -s 0.0.0.0/0 -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 3389 -s 0.0.0.0/0 -j ACCEPT
+-A INPUT -p udp -m udp --dport 161 -s 0.0.0.0/0 -j ACCEPT
+-A INPUT -j DROP
+COMMIT
