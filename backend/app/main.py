@@ -88,6 +88,14 @@ def create_app() -> FastAPI:
     app.include_router(firewall_rules.router)
     app.include_router(cis_results.router)
 
+    @app.get("/")
+    async def root():
+        return {
+            "message": "Network Posture Scanner API is running",
+            "docs": "/docs",
+            "health": "/health"
+        }
+
     return app
 
 
