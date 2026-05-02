@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+.coverage
+htmlcov/
+dist/
+build/
+
+# Node / Frontend
+node_modules/
+frontend/dist/
+frontend/.vite/
+.vite-cache/
+*.log
+
+# Local data + secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+data/
+local-storage.json
+
+# IaC
+.aws-sam/
+samconfig.toml
+cdk.out/
+
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/
+Thumbs.db
+
+# Reports
+reports/

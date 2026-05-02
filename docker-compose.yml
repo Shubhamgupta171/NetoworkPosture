@@ -1,0 +1,37 @@
+services:
+  # Vulnerable target host — exposes intentionally bad services for the scanner to find.
+  # NEVER expose this beyond a local Docker network.
+  vulnerable-target:
+    image: linuxserver/openssh-server:latest
+    container_name: nps-target
+    environment:
+      - PASSWORD_ACCESS=true
+      - USER_PASSWORD=admin
+      - USER_NAME=admin
+    ports:
+      - "127.0.0.1:2222:2222"   # SSH
+      - "127.0.0.1:8080:80"     # plaintext HTTP banner
+    networks:
+      lab:
+        ipv4_address: 172.28.0.10
+
+  backend:
+    build: ./backend
+    container_name: nps-backend
+    env_file: .env
+    environment:
+      STORAGE_BACKEND: file
+      LOCAL_STORE_PATH: /data/store.json
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/data
+    networks:
+      - lab
+
+networks:
+  lab:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16

@@ -1,0 +1,16 @@
+{
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/api/index.py" }
+  ],
+  "env": {
+    "DISABLE_SCHEDULER": "1",
+    "STORAGE_BACKEND": "memory",
+    "API_KEY": "nps-key-random-1234567890abcdef"
+  },
+  "crons": [
+    {
+      "path": "/scheduler-tick",
+      "schedule": "*/5 * * * *"
+    }
+  ]
+}

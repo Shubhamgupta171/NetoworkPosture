@@ -1,0 +1,103 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Network Posture Scanner — API Gateway + Lambda + DynamoDB
+
+Parameters:
+  ApiKeySecretName:
+    Type: String
+    Default: nps/api-key
+    Description: Secrets Manager secret name holding the X-Api-Key value.
+  StageName:
+    Type: String
+    Default: prod
+
+Globals:
+  Function:
+    Runtime: python3.12
+    MemorySize: 512
+    Timeout: 15
+    Architectures: [arm64]
+    Tracing: Active
+    Environment:
+      Variables:
+        STORAGE_BACKEND: dynamodb
+        DYNAMODB_TABLE: !Ref ScannerTable
+        AWS_REGION: !Ref AWS::Region
+        LOG_LEVEL: INFO
+  Api:
+    TracingEnabled: true
+    OpenApiVersion: 3.0.1
+    Cors:
+      AllowMethods: "'GET,POST,OPTIONS'"
+      AllowHeaders: "'Content-Type,X-Api-Key'"
+      AllowOrigin: "'*'"
+
+Resources:
+  ScannerTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+        - AttributeName: sk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+        - AttributeName: sk
+          KeyType: RANGE
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      SSESpecification:
+        SSEEnabled: true
+
+  ApiKeySecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Ref ApiKeySecretName
+      Description: Shared X-Api-Key for the Network Posture Scanner ingest + read APIs.
+      GenerateSecretString:
+        PasswordLength: 48
+        ExcludePunctuation: true
+
+  ScannerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../backend/
+      Handler: app.lambda_handler.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ScannerTable
+        - Statement:
+            - Effect: Allow
+              Action: secretsmanager:GetSecretValue
+              Resource: !Ref ApiKeySecret
+      Environment:
+        Variables:
+          API_KEY: !Sub "{{resolve:secretsmanager:${ApiKeySecret}:SecretString}}"
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /{proxy+}
+            Method: ANY
+
+  HttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: !Ref StageName
+      DefaultRouteSettings:
+        ThrottlingBurstLimit: 100
+        ThrottlingRateLimit: 50
+
+Outputs:
+  ApiUrl:
+    Description: Public API base URL
+    Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+  TableName:
+    Value: !Ref ScannerTable
+  ApiKeySecretArn:
+    Value: !Ref ApiKeySecret
+    Description: Read this secret to get the X-Api-Key value.

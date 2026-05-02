@@ -1,0 +1,56 @@
+{
+  "GroupId": "sg-0a1b2c3d4e5f60718",
+  "GroupName": "web-tier-sg",
+  "VpcId": "vpc-0123456789abcdef0",
+  "Description": "Web tier — DEMO SG with intentionally permissive rules",
+  "IpPermissions": [
+    {
+      "IpProtocol": "tcp",
+      "FromPort": 22,
+      "ToPort": 22,
+      "IpRanges": [{"CidrIp": "0.0.0.0/0", "Description": "SSH from anywhere"}]
+    },
+    {
+      "IpProtocol": "tcp",
+      "FromPort": 3389,
+      "ToPort": 3389,
+      "IpRanges": [{"CidrIp": "0.0.0.0/0", "Description": "RDP from anywhere"}]
+    },
+    {
+      "IpProtocol": "tcp",
+      "FromPort": 80,
+      "ToPort": 80,
+      "IpRanges": [{"CidrIp": "0.0.0.0/0"}]
+    },
+    {
+      "IpProtocol": "tcp",
+      "FromPort": 443,
+      "ToPort": 443,
+      "IpRanges": [{"CidrIp": "0.0.0.0/0"}]
+    },
+    {
+      "IpProtocol": "tcp",
+      "FromPort": 5432,
+      "ToPort": 5432,
+      "IpRanges": [{"CidrIp": "0.0.0.0/0", "Description": "Postgres exposed publicly"}]
+    },
+    {
+      "IpProtocol": "udp",
+      "FromPort": 161,
+      "ToPort": 161,
+      "IpRanges": [{"CidrIp": "0.0.0.0/0", "Description": "SNMP exposed"}]
+    }
+  ],
+  "IpPermissionsEgress": [
+    {
+      "IpProtocol": "-1",
+      "FromPort": -1,
+      "ToPort": -1,
+      "IpRanges": [{"CidrIp": "0.0.0.0/0", "Description": "Allow all outbound"}]
+    }
+  ],
+  "Tags": [
+    {"Key": "Environment", "Value": "demo"},
+    {"Key": "Owner", "Value": "platform-team"}
+  ]
+}
