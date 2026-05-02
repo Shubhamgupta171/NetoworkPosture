@@ -1,6 +1,7 @@
 [project]
 name = "nps-backend"
 version = "0.1.0"
+requires-python = ">=3.11"
 dependencies = [
     "fastapi==0.115.4",
     "uvicorn[standard]==0.32.0",
@@ -11,7 +12,8 @@ dependencies = [
     "mangum==0.19.0",
     "ciscoconfparse2==0.7.79",
     "httpx==0.27.2",
-    "reportlab==4.2.5"
+    "reportlab==4.2.5",
+    "psycopg2-binary==2.9.10"
 ]
 
 [tool.ruff]

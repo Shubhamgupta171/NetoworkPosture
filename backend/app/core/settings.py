@@ -8,7 +8,7 @@ from typing import Literal
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-StorageBackend = Literal["memory", "file", "dynamodb"]
+StorageBackend = Literal["memory", "file", "dynamodb", "postgres"]
 
 
 class Settings(BaseSettings):
@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     )
     storage_backend: StorageBackend = "file"
     local_store_path: str = "./data/store.json"
+    database_url: str = "postgresql://postgres:postgres@localhost:5432/postgres"
 
     aws_region: str = "ap-south-1"
     dynamodb_table: str = "network-posture-scanner"

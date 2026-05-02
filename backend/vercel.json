@@ -4,13 +4,13 @@
   ],
   "env": {
     "DISABLE_SCHEDULER": "1",
-    "STORAGE_BACKEND": "memory",
+    "STORAGE_BACKEND": "postgres",
     "API_KEY": "nps-key-random-1234567890abcdef"
   },
   "crons": [
     {
       "path": "/scheduler-tick",
-      "schedule": "*/5 * * * *"
+      "schedule": "0 0 * * *"
     }
   ]
 }

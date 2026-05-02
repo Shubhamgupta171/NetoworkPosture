@@ -229,6 +229,89 @@ class DynamoDBStore(Store):
         return [Schedule.model_validate(i) for i in self._query(_SCHEDULES)]
 
 
+class PostgresStore(Store):
+    """PostgreSQL store. Stores pydantic models as JSONB."""
+
+    def __init__(self, dsn: str) -> None:
+        import psycopg2
+        from psycopg2.extras import Json
+
+        self._dsn = dsn
+        self._Json = Json
+        # Ensure table exists
+        with psycopg2.connect(self._dsn) as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS nps_storage (
+                        kind TEXT NOT NULL,
+                        id TEXT NOT NULL,
+                        data JSONB NOT NULL,
+                        PRIMARY KEY (kind, id)
+                    );
+                """)
+
+    def _upsert_batch(self, kind: str, items: list[dict[str, Any]]) -> None:
+        import psycopg2
+        with psycopg2.connect(self._dsn) as conn:
+            with conn.cursor() as cur:
+                for item in items:
+                    cur.execute("""
+                        INSERT INTO nps_storage (kind, id, data)
+                        VALUES (%s, %s, %s)
+                        ON CONFLICT (kind, id) DO UPDATE SET data = EXCLUDED.data;
+                    """, (kind, item["id"], self._Json(item)))
+
+    def _query(self, kind: str) -> list[dict[str, Any]]:
+        import psycopg2
+        with psycopg2.connect(self._dsn) as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT data FROM nps_storage WHERE kind = %s", (kind,))
+                return [row[0] for row in cur.fetchall()]
+
+    def upsert_devices(self, devices: list[Device]) -> None:
+        self._upsert_batch(_DEVICES, [{**d.model_dump(mode="json"), "id": d.id} for d in devices])
+
+    def upsert_rulesets(self, rulesets: list[FirewallRuleSet]) -> None:
+        self._upsert_batch(_RULESETS, [{**r.model_dump(mode="json"), "id": r.id} for r in rulesets])
+
+    def replace_results(self, results: list[BenchmarkResult]) -> None:
+        import psycopg2
+        with psycopg2.connect(self._dsn) as conn:
+            with conn.cursor() as cur:
+                cur.execute("DELETE FROM nps_storage WHERE kind = %s", (_RESULTS,))
+        self._upsert_batch(_RESULTS, [{**r.model_dump(mode="json"), "id": r.id} for r in results])
+
+    def record_scan(self, summary: ScanSummary) -> None:
+        self._upsert_batch(_SCANS, [{**summary.model_dump(mode="json"), "id": summary.scan_id}])
+
+    def list_devices(self) -> list[Device]:
+        return [Device.model_validate(i) for i in self._query(_DEVICES)]
+
+    def list_rulesets(self) -> list[FirewallRuleSet]:
+        return [FirewallRuleSet.model_validate(i) for i in self._query(_RULESETS)]
+
+    def list_results(self) -> list[BenchmarkResult]:
+        return [BenchmarkResult.model_validate(i) for i in self._query(_RESULTS)]
+
+    def list_scans(self) -> list[ScanSummary]:
+        return [ScanSummary.model_validate(i) for i in self._query(_SCANS)]
+
+    def upsert_schedule(self, schedule: Schedule) -> None:
+        self._upsert_batch(_SCHEDULES, [{**schedule.model_dump(mode="json"),
+                                       "id": schedule.schedule_id}])
+
+    def delete_schedule(self, schedule_id: str) -> bool:
+        import psycopg2
+        with psycopg2.connect(self._dsn) as conn:
+            with conn.cursor() as cur:
+                cur.execute("DELETE FROM nps_storage WHERE kind = %s AND id = %s",
+                            (_SCHEDULES, schedule_id))
+        return True
+
+    def list_schedules(self) -> list[Schedule]:
+        return [Schedule.model_validate(i) for i in self._query(_SCHEDULES)]
+
+
 def build_store(settings: Settings | None = None) -> Store:
     settings = settings or get_settings()
     if settings.storage_backend == "memory":
@@ -237,6 +320,8 @@ def build_store(settings: Settings | None = None) -> Store:
         return FileStore(Path(settings.local_store_path))
     if settings.storage_backend == "dynamodb":
         return DynamoDBStore(settings.dynamodb_table, settings.aws_region)
+    if settings.storage_backend == "postgres":
+        return PostgresStore(settings.database_url)
     raise ValueError(f"Unknown storage backend: {settings.storage_backend}")
 
 
